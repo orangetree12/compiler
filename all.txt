@@ -1,0 +1,776 @@
+//1st
+// C file
+// recognizes identifiers and constants.
+
+#include <stdio.h>
+#include <ctype.h>
+#include <string.h>
+
+int isIdentifier(char *str) {
+    int i;
+    if (!isalpha(str[0]) && str[0] != '_') 
+        return 0;
+
+    for (i = 1; str[i] != '\0'; i++) {
+        if (!isalnum(str[i]) && str[i] != '_') 
+            return 0;
+    }
+    return 1;
+}
+
+
+int isConstant(char *str) {
+    int i;
+    for (i = 0; str[i] != '\0'; i++) {
+        if (!isdigit(str[i]))
+            return 0;
+    }
+    return 1;
+}
+
+int main() {
+    char token[100];
+
+    printf("Enter a token (or type 'exit' to quit): ");
+    while (1) {
+        scanf("%s", token);
+
+        if (strcmp(token, "exit") == 0) {
+            printf("Exiting the program.\n");
+            break;
+        }
+
+        if (isIdentifier(token)) {
+            printf("'%s' is an Identifier.\n", token);
+        } else if (isConstant(token)) {
+            printf("'%s' is a Constant.\n", token);
+        } else {
+            printf("'%s' is an Invalid token.\n", token);
+        }
+
+        printf("\nEnter another token (or type 'exit' to quit): ");
+    }
+    return 0;
+}
+
+
+//2nd
+
+// lex file
+//lexical analyzer and separate token
+
+
+%{ 
+#include<stdio.h> 
+#include<stdlib.h> 
+#include<string.h> 
+#define MAX_IDENTIFIER_LENGTH 50 
+%} 
+%option noyywrap 
+%option yylineno 
+void addtosymboltable(const char*) 
+%% 
+[\t] /*ignore whitespace*/ 
+\n /*ignore newline*/ 
+\/\*([^*]|\*+[^*/])*\*+\/ /*ignore comments*/ 
+[0-9]+ {printf("Constant:%s \n",yytext);} 
+= {printf("%s is an Assignment Operator\n",yytext);} 
+\* | 
+\+ | 
+\- {printf("%s is a Operator\n",yytext);} 
+if|else|int|float|char|void {printf("%s is a keyword\n",yytext);} 
+[a-zA-Z][a-zA-Z0-9]* {printf("identifier:%s\n",yytext);} 
+. {} 
+%% 
+
+int main() 
+{ 
+yylex(); return 1; 
+}
+ 
+
+
+
+
+//3rd
+//Lex and Yacc FILE
+// valid arithmetic expression
+
+
+LEX PROGRAM :
+
+%{
+#include "3.tab.h"
+%}
+
+%option noyywrap
+
+%%
+[0-9]+          { return NUMBER; }
+[\t ]+          ;  /* Ignore whitespaces */
+"+"             { return PLUS; }
+"-"             { return MINUS; }
+"*"             { return MULTIPLY; }
+"/"             { return DIVIDE; }
+"("             { return LPAREN; }
+")"             { return RPAREN; }
+\n              { return 0; } /* End of input */
+.               { printf("Invalid character: %s\n", yytext); return 0; }
+
+%%
+
+
+
+YACC PROGRAM :
+
+
+
+%{
+#include <stdio.h>
+#include <stdlib.h>
+
+void yyerror(const char *s);
+%}
+
+%token NUMBER
+%token PLUS MINUS MULTIPLY DIVIDE
+%token LPAREN RPAREN
+
+%left PLUS MINUS
+%left MULTIPLY DIVIDE
+%right UMINUS /* Unary minus */
+
+%%
+
+expression:
+    expression PLUS expression
+  | expression MINUS expression
+  | expression MULTIPLY expression
+  | expression DIVIDE expression
+  | LPAREN expression RPAREN
+  | MINUS expression %prec UMINUS
+  | NUMBER
+  ;
+%%
+
+void yyerror(const char *s) {
+    printf("Invalid expression: %s\n", s);
+}
+
+int main(void) {
+    printf("Enter an expression: ");
+    if (yyparse() == 0) {
+        printf("The expression is valid.\n");
+    } else {
+        printf("The expression is invalid.\n");
+    }
+    return 0;
+}
+
+
+//4th
+
+//Lex and Yacc FILE
+//recognize a valid variable
+
+
+LEX PROGRAM :
+
+
+%{
+  #include"4.tab.c"
+%}
+
+%%
+[a-zA-Z][a-zA-Z0-9]* {return letter;}
+[0-9] {return digit;}
+. {return yytext[0];}
+\n {return 0;}
+%%
+
+int yywrap(){
+  return 1;
+}
+
+
+
+YACC PROGRAM :
+
+
+
+%{
+#include <stdio.h>
+int valid = 1;
+%}
+
+%token letter
+%token digit
+%%
+start: letter S
+    ;
+S: letter S
+  | digit S
+  |
+  ;
+%% 
+int yyerror() {
+    printf("\nIt's not an identifier\n");
+    valid = 0;
+    return 0;
+}
+int main() {
+    printf("Enter a name: ");
+    yyparse();
+    if (valid) {
+        printf("\nIt's an identifier!\n");
+    }
+    return 0;
+}
+
+
+//5th
+
+// C FILE
+// three address code into assembly language
+
+
+
+#include <stdio.h>
+#include <conio.h>
+#include <string.h>
+void main()
+{
+    char icode[10][30], str[20], opr[10];
+    int i = 0;
+
+    printf(" Enter the set of intermediate code (terminated by exit):");
+    do
+    {
+        scanf("%s", icode[i]);
+    } while (strcmp(icode[i++], "exit") != 0);
+    printf(" \ntarget code generation\n");
+    printf("\n************************\n");
+    i = 0;
+    do
+    {
+        strcpy(str, icode[i]);
+        switch (str[3])
+        {
+        case '+':
+            strcpy(opr, "ADD ");
+            break;
+        case '-':
+            strcpy(opr, "SUB ");
+            break;
+        case '*':
+            strcpy(opr, "MUL ");
+            break;
+        case '/':
+            strcpy(opr, "DIV ");
+            break;
+        }
+		printf("\nMov %c,R%d", str[2], i);
+		printf("\n%s%c,R%d", opr, str[4], i);
+		printf("\nMov R%d,%c", i, str[0]);
+    } while (strcmp(icode[++i], "exit") != 0);
+    getch();
+}
+
+
+//6th
+
+// Lex FILE
+//identifies comments, operators and keywords
+
+
+%option noyywrap
+%{ 
+int COMMENT=0; 
+%} 
+
+%option noyywrap 
+identifier[a-zA-Z][a-zA-Z0-9]* 
+
+%% 
+#.* {printf("\n %s is a preprocessor directive",yytext); } 
+if|else|int|float|char|void|for|while|clrscr|getch|printf|scanf {printf("%s is a keyword",yytext);} 
+"/*" {COMMENT=1;printf("it comment");} 
+"*/" {COMMENT=0;} 
+{identifier}\( {if(!COMMENT)printf("\n Function:\t %s",yytext);} 
+\{ {if(!COMMENT)printf("\n Block begins");} 
+\} {if(!COMMENT)printf("\n Block ends");} 
+{identifier}(\[[0-9]*\])? {if(!COMMENT)printf("\n %s is an Identifier",yytext);} 
+\".*\" {if(!COMMENT)printf("\n %s is a string",yytext);} 
+[0-9]+ {if(!COMMENT)printf("\n %s is a number",yytext);} 
+\)(\;)? {if(!COMMENT)printf("\t");ECHO;printf("\n");} 
+\(ECHO; 
+= {if(!COMMENT)printf("\n %s is an Assignment operator",yytext);} 
+\<= | 
+\>= | 
+\< | 
+== {if(!COMMENT)printf("\n %s is a relational operator",yytext);} 
+[-+*/] {if(!COMMENT)printf("\n %s is a operator",yytext);} 
+.|\n 
+%% 
+
+int main() 
+{
+yylex();
+printf("\n\n"); 
+return 0; 
+} 
+
+
+//7th
+
+//Lex and Yacc FILE
+//recognize (For loop, while loop, if else, if-else-if, switch-case, etc.)
+
+
+LEX PROGRAM :
+
+
+%{
+#include<stdio.h>
+#include "7.tab.h"
+%}
+%%
+"if" { return IF; }
+"else" { return ELSE; }
+"while" { return WHILE; }
+"for" { return FOR; }
+"switch" { return SWITCH; }
+"case" { return CASE; }
+"default" { return DEFAULT; }
+"break" { return BREAK; }
+"(" { return OPEN_BRACKET; }
+")" { return CLOSE_BRACKET; }
+"{" { return OPEN_BRACE; }
+"}" { return CLOSE_BRACE; }
+";" { return SEMICOLON; }
+[\t\n] ;
+. ;
+%%
+
+int yywrap()
+{
+return 1;
+}
+
+
+YACC PROGRAM : 
+
+
+
+%{
+#include<stdio.h>
+int yylex();
+%}
+%token IF ELSE WHILE FOR SWITCH CASE DEFAULT OPEN_BRACE CLOSE_BRACE
+SEMICOLON COLON OPEN_BRACKET CLOSE_BRACKET BREAK
+%%
+program: statement
+| program statement
+;
+statement:if_statement
+|while_loop
+|switch_case_statement
+|for_loop
+;
+if_statement:IF OPEN_BRACKET expression_opt CLOSE_BRACKET OPEN_BRACE
+expression_opt CLOSE_BRACE ELSE OPEN_BRACE expression_opt CLOSE_BRACE
+{
+printf("Recognized IF Else statement\n");
+}
+;
+while_loop:WHILE OPEN_BRACKET expression_opt CLOSE_BRACKET OPEN_BRACE
+expression_opt CLOSE_BRACE
+{
+printf("Recognized WHILE loop\n");
+}
+;
+switch_case_statement:SWITCH OPEN_BRACKET expression_opt CLOSE_BRACKET
+OPEN_BRACE case_list CLOSE_BRACE
+{
+printf("Recognized SWITCH_CASE statement with DEFAULT\n");
+}
+;
+for_loop:FOR OPEN_BRACKET expression_opt SEMICOLON expression_opt
+CLOSE_BRACKET OPEN_BRACE expression_opt CLOSE_BRACE
+{
+printf("Recognized FOR loop\n");
+}
+;
+case_list:CASE expression COLON expression BREAK
+SEMICOLON DEFAULT COLON expression_opt
+;
+expression_opt:/*empty*/
+|expression
+|expression SEMICOLON
+;
+expression:
+;
+%%
+int yyerror(const char *s)
+{
+fprintf(stderr,"Error=%s\n", s);
+return 1;
+}
+int main() {
+if(yyparse()==0){
+printf("Parsing completed successfully\n");
+}
+else{
+fprintf(stderr,"Parsing encountered errors\n");
+}
+return 0;
+}
+
+
+//8th
+
+// Lex FILE
+//scan reserved words, variables and operators
+
+
+
+%option noyywrap
+%{ 
+int COMMENT=0; 
+%} 
+
+%option noyywrap 
+identifier[a-zA-Z][a-zA-Z0-9]* 
+
+%% 
+#.* {printf("\n %s is a preprocessor directive",yytext); } 
+if|else|int|float|char|void|for|while|clrscr|getch|printf|scanf {printf("%s is a keyword",yytext);} 
+"/*" {COMMENT=1;printf("it comment");} 
+"*/" {COMMENT=0;} 
+{identifier}\( {if(!COMMENT)printf("\n Function:\t %s",yytext);} 
+\{ {if(!COMMENT)printf("\n Block begins");} 
+\} {if(!COMMENT)printf("\n Block ends");} 
+{identifier}(\[[0-9]*\])? {if(!COMMENT)printf("\n %s is an variable",yytext);} 
+\".*\" {if(!COMMENT)printf("\n %s is a string",yytext);} 
+[0-9]+ {if(!COMMENT)printf("\n %s is a number",yytext);} 
+\)(\;)? {if(!COMMENT)printf("\t");ECHO;printf("\n");} 
+\(ECHO; 
+= {if(!COMMENT)printf("\n %s is an Assignment operator",yytext);} 
+\<= | 
+\>= | 
+\< | 
+== {if(!COMMENT)printf("\n %s is a relational operator",yytext);} 
+[-+*/] {if(!COMMENT)printf("\n %s is a operator",yytext);} 
+.|\n 
+%% 
+
+int main() 
+{
+yylex();
+printf("\n\n"); 
+return 0; 
+} 
+
+
+//9th
+// Lex FILE
+// find out the total number of vowels and consonants
+
+
+
+%{
+#include <stdio.h>
+int vowels = 0, consonants = 0;
+%}
+
+%%
+
+[aAeEiIoOuU]  { vowels++; } 
+[a-zA-Z]       { consonants++; } 
+
+[ \t]        ; 
+[ \n]   {return 0;}; 
+.              ; 
+
+%%
+
+int main() {
+    printf("Enter a string: ");
+    yylex(); 
+    printf("\nTotal Vowels: %d\n", vowels);
+    printf("Total Consonants: %d\n", consonants);
+    return 0;
+}
+
+int yywrap() {
+    return 1; 
+}
+
+
+//10th
+
+// C FILE
+// input block using Code Optimization Techniques.
+
+
+
+#include <stdio.h>
+#include <string.h>
+
+struct op {
+    char l;
+    char r[20];
+} op[10], pr[10];
+
+int main() {
+    int a, i, k, j, n, z = 0, m, q;
+    char *p, *l;
+    char temp, t;
+    char *tem;
+
+    printf("Enter the Number of Values: ");
+    scanf("%d", &n);
+
+    for (i = 0; i < n; i++) {
+        printf("left: ");
+        scanf(" %c", &op[i].l);
+        printf("right: ");
+        scanf(" %s", op[i].r);
+    }
+
+    printf("\nIntermediate Code:\n");
+    for (i = 0; i < n; i++) {
+        printf("%c = %s\n", op[i].l, op[i].r);
+    }
+
+    for (i = 0; i < n - 1; i++) {
+        temp = op[i].l;
+        for (j = 0; j < n; j++) {
+            p = strchr(op[j].r, temp);
+            if (p) {
+                pr[z].l = op[i].l;
+                strcpy(pr[z].r, op[i].r);
+                z++;
+            }
+        }
+    }
+
+    pr[z].l = op[n - 1].l;
+    strcpy(pr[z].r, op[n - 1].r);
+    z++;
+
+    printf("\nAfter Dead Code Elimination:\n");
+    for (k = 0; k < z; k++) {
+        printf("%c = %s\n", pr[k].l, pr[k].r);
+    }
+
+    for (m = 0; m < z; m++) {
+        tem = pr[m].r;
+        for (j = m + 1; j < z; j++) {
+            p = strstr(tem, pr[j].r);
+            if (p) {
+                t = pr[j].l;
+                pr[j].l = pr[m].l;
+                for (i = 0; i < z; i++) {
+                    l = strchr(pr[i].r, t);
+                    if (l) {
+                        a = l - pr[i].r;
+                        if (a < strlen(pr[i].r)) {
+                            pr[i].r[a] = pr[m].l;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    printf("\nEliminate Common Expression:\n");
+    for (i = 0; i < z; i++) {
+        printf("%c = %s\n", pr[i].l, pr[i].r);
+    }
+
+    for (i = 0; i < z; i++) {
+        for (j = i + 1; j < z; j++) {
+            q = strcmp(pr[i].r, pr[j].r);
+            if ((pr[i].l == pr[j].l) && (q == 0)) {
+                pr[i].l = ' ';
+            }
+        }
+    }
+
+    printf("\nOptimized Code:\n");
+    for (i = 0; i < z; i++) {
+        if (pr[i].l != ' ') {
+            printf("%c = %s\n", pr[i].l, pr[i].r);
+        }
+    }
+
+    return 0;
+}
+
+//11th
+// Lex and Yacc FILE
+// implement a native calculator.
+
+
+
+LEX PROGRAM : 
+
+
+%{
+#include <stdio.h>
+#include "11.tab.c"
+extern int yylval;
+%}
+%%
+
+[0-9]+ {
+yylval = atoi(yytext);
+return NUMBER;
+}
+[ \t] ;
+[\n] return 0;
+. {return yytext[0];}
+%%
+int yywrap()
+{
+return 1;
+}
+
+
+
+YACC PROGRAM : 
+
+
+
+%{
+#include <stdio.h>
+int flag = 0;
+%}
+%token NUMBER
+%left '+' '-'
+%left '*' '/'
+%left '%'
+%left '(' ')'
+
+%%
+ArithmeticExpression: E {
+    printf("Result = %d\n", $1);
+    return 0;
+};
+
+E: E '+' E { $$ = $1 + $3; }
+ | E '-' E { $$ = $1 - $3; }
+ | E '*' E { $$ = $1 * $3; }
+ | E '/' E { $$ = $1 / $3; }
+ | E '%' E { $$ = $1 % $3; }
+ | '(' E ')' { $$ = $2; }
+ | NUMBER { $$ = $1; }
+;
+
+%%
+int main() {
+    printf("This is Calculator");
+    printf("\nEnter an arithmetic expression: ");
+    yyparse();
+    if (flag == 0) {
+        printf("\nEntered arithmetic expression is Valid\n");
+    }
+    return 0;
+}
+
+void yyerror(const char* s) {
+    printf("\nEntered arithmetic expression is Invalid\n");
+    flag = 1;
+}
+
+//12th
+
+// Lex and Yacc FILE
+// generate a three-address code 
+
+
+
+LEX PROGRAM : 
+
+
+
+%{
+#include<stdio.h>
+#include "12.tab.h"
+%}
+
+%%
+[0-9]+          { yylval = atoi(yytext); return NUM; }
+[ \t]+          ; /* Ignore whitespace */
+\n              { return EOL; }
+[-+*/()]        { return yytext[0]; }
+.               { fprintf(stderr, "Error: Invalid Character\n"); }
+
+%%
+int yywrap() { return 1; }
+
+
+
+YACC PROGRAM : 
+
+
+
+%{
+#include <stdio.h>
+#include <stdlib.h>
+int temp_count = 0;  
+void yyerror(const char *s) {
+    fprintf(stderr, "Error: %s\n", s);
+}
+%}
+%token NUM EOL
+%left '+' '-'
+%left '*' '/'
+%%
+program: lines
+;
+lines: lines line
+     | line
+;
+line: expr EOL {
+    printf("Result: t%d\n", $1);
+}
+;
+expr: NUM {
+    $$ = ++temp_count;
+    printf("t%d = %d\n", $$, $1);  // literals
+}
+| '(' expr ')' {
+    $$ = $2;
+}
+| expr '+' expr {
+    $$ = ++temp_count;
+    printf("t%d = t%d + t%d\n", $$, $1, $3);  // addition
+}
+| expr '-' expr {
+    $$ = ++temp_count;
+    printf("t%d = t%d - t%d\n", $$, $1, $3);  // subtraction
+}
+| expr '*' expr {
+    $$ = ++temp_count;
+    printf("t%d = t%d * t%d\n", $$, $1, $3);  // multiplication
+}
+| expr '/' expr {
+    if ($3 == 0) {
+        yyerror("Division by zero");
+        $$ = 0;
+    } else {
+        $$ = ++temp_count;
+        printf("t%d = t%d / t%d\n", $$, $1, $3);  // division
+    }
+}
+;
+%%
+int main() {
+    printf("\nExpression to 3 addr code\n");
+    printf("Enter Expression: ");
+    yyparse();
+    return 0;
+}
+
